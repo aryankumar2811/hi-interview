@@ -88,3 +88,55 @@ def test_get_client_unauthenticated(
 
     response = unauthenticated_test_client.get(f"/client/{client_id}")
     assert response.status_code == 401
+
+
+def test_create_client(test_client: TestClient) -> None:
+    response = test_client.post(
+        "/client",
+        json={
+            "email": "new@example.com",
+            "first_name": "Frank",
+            "last_name": "Green",
+        },
+    )
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["email"] == "new@example.com"
+    assert data["first_name"] == "Frank"
+    assert data["last_name"] == "Green"
+    assert "id" in data
+
+
+def test_create_client_duplicate_email(test_client: TestClient) -> None:
+    test_client.post(
+        "/client",
+        json={
+            "email": "duplicate@example.com",
+            "first_name": "Dup",
+            "last_name": "One",
+        },
+    )
+    response = test_client.post(
+        "/client",
+        json={
+            "email": "duplicate@example.com",
+            "first_name": "Dup",
+            "last_name": "Two",
+        },
+    )
+    assert response.status_code == 409
+
+
+def test_create_client_unauthenticated(
+    unauthenticated_test_client: TestClient,
+) -> None:
+    response = unauthenticated_test_client.post(
+        "/client",
+        json={
+            "email": "unauth-create@example.com",
+            "first_name": "No",
+            "last_name": "Auth",
+        },
+    )
+    assert response.status_code == 401
