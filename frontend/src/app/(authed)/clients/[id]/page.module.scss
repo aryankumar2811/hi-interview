@@ -23,5 +23,13 @@
 }
 
 .card {
-    margin-bottom: var(--mantine-spacing-lg);
+    margin-bottom: var(--mantine-spacing-xl);
+}
+
+.notes-title {
+    margin-bottom: var(--mantine-spacing-sm);
+}
+
+.note-input {
+    margin-bottom: var(--mantine-spacing-md);
 }

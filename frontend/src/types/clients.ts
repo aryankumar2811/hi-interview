@@ -13,3 +13,15 @@ export interface CreateClientRequest {
     first_name: string;
     last_name: string;
 }
+
+export interface ClientNote {
+    id: string;
+    client_id: string;
+    creator_user_id: string;
+    content: string;
+    created_at: string;
+}
+
+export interface CreateClientNoteRequest {
+    content: string;
+}
