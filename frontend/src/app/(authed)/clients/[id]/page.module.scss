@@ -1,6 +1,5 @@
 .container {
     padding: var(--mantine-spacing-xl);
-    max-width: 800px;
 }
 
 .loading {
@@ -15,8 +14,32 @@
     margin-bottom: var(--mantine-spacing-sm);
 }
 
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: var(--mantine-spacing-xl);
+    align-items: start;
+
+    @media (max-width: 48em) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.col-sidebar {
+    position: sticky;
+    top: var(--mantine-spacing-xl);
+
+    @media (max-width: 48em) {
+        position: static;
+    }
+}
+
+.col-main {
+    min-width: 0;
+}
+
 .card {
-    margin-bottom: var(--mantine-spacing-xl);
+    margin-bottom: 0;
 }
 
 .card-header {
@@ -61,6 +84,16 @@
 
 .info-rows {
     padding: 0;
+}
+
+.info-row {
+    padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+    border-radius: var(--mantine-radius-sm);
+    transition: background-color 150ms ease;
+
+    &:hover {
+        background-color: var(--mantine-color-gray-0);
+    }
 }
 
 .info-label {

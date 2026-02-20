@@ -4,7 +4,7 @@
 import { ActionIcon, Alert, Badge, Button, Card, CopyButton, Group, Skeleton, Stack, Text, Textarea, Title, Tooltip } from "@mantine/core";
 import { IconAlertCircle, IconArrowLeft, IconAt, IconCalendar, IconCheck, IconClock, IconCopy, IconMail, IconNote, IconPhone, IconPointFilled, IconReload, IconSend, IconTimeline, IconUsers } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useApi } from "@/api/context";
 import { Client, ClientNote } from "@/types/clients";
@@ -123,30 +123,34 @@ function DetailSkeleton() {
     return (
         <div className={styles.container}>
             <Skeleton height={30} width={140} radius="sm" mb="sm" />
-
-            <Card withBorder radius="md" className={styles.card}>
-                <div className={styles["card-header"]}>
-                    <Skeleton height={72} width={72} circle />
-                    <div className={styles["header-info"]}>
-                        <Skeleton height={28} width={200} radius="sm" />
-                        <Skeleton height={16} width={180} radius="sm" />
-                    </div>
+            <div className={styles.layout}>
+                <div className={styles["col-sidebar"]}>
+                    <Card withBorder radius="md">
+                        <div className={styles["card-header"]}>
+                            <Skeleton height={72} width={72} circle />
+                            <div className={styles["header-info"]}>
+                                <Skeleton height={28} width={200} radius="sm" />
+                                <Skeleton height={16} width={180} radius="sm" />
+                            </div>
+                        </div>
+                        <div className={styles.divider} />
+                        <Stack gap="md">
+                            <Skeleton height={16} width="80%" radius="sm" />
+                            <Skeleton height={16} width="70%" radius="sm" />
+                            <Skeleton height={16} width="60%" radius="sm" />
+                        </Stack>
+                    </Card>
                 </div>
-                <div className={styles.divider} />
-                <Stack gap="md">
-                    <Skeleton height={16} width="60%" radius="sm" />
-                    <Skeleton height={16} width="50%" radius="sm" />
-                    <Skeleton height={16} width="40%" radius="sm" />
-                </Stack>
-            </Card>
-
-            <Skeleton height={24} width={120} radius="sm" mb="sm" />
-            <Skeleton height={100} radius="md" mb="md" />
-            <Stack gap="sm">
-                <Skeleton height={80} radius="md" />
-                <Skeleton height={80} radius="md" />
-                <Skeleton height={80} radius="md" />
-            </Stack>
+                <div className={styles["col-main"]}>
+                    <Skeleton height={24} width={120} radius="sm" mb="sm" />
+                    <Skeleton height={100} radius="md" mb="md" />
+                    <Stack gap="sm">
+                        <Skeleton height={80} radius="md" />
+                        <Skeleton height={80} radius="md" />
+                        <Skeleton height={80} radius="md" />
+                    </Stack>
+                </div>
+            </div>
         </div>
     );
 }
@@ -185,8 +189,8 @@ export default function ClientDetailPage({ id }: { id: string }) {
         return notes.filter(note => note.category === activeFilter);
     }, [notes, activeFilter]);
 
-    const handleAddNote = async () => {
-        if (!noteContent.trim()) return;
+    const handleAddNote = useCallback(async () => {
+        if (!noteContent.trim() || submitting) return;
         setSubmitting(true);
         try {
             const created = await api.clients.createNote(id, {
@@ -200,7 +204,14 @@ export default function ClientDetailPage({ id }: { id: string }) {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [api, id, noteContent, noteCategory, submitting]);
+
+    const handleComposerKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            handleAddNote();
+        }
+    }, [handleAddNote]);
 
     if (loading) {
         return <DetailSkeleton />;
@@ -243,161 +254,169 @@ export default function ClientDetailPage({ id }: { id: string }) {
                 Back to Clients
             </Button>
 
-            <Card withBorder radius="md" className={styles.card}>
-                <div className={styles["card-header"]}>
-                    <div
-                        className={styles.avatar}
-                        style={{ backgroundColor: clientAvatarColor }}
-                    >
-                        <Text className={styles["avatar-text"]}>{clientInitials}</Text>
-                    </div>
-                    <div className={styles["header-info"]}>
-                        <Title order={2}>{client.first_name} {client.last_name}</Title>
-                        <Group gap="xs" className={styles["email-row"]}>
-                            <IconMail size={14} color="var(--mantine-color-dimmed)" />
-                            <Text size="sm" c="dimmed">{client.email}</Text>
-                            <CopyButton value={client.email} timeout={2000}>
-                                {({ copied, copy }) => (
-                                    <Tooltip label={copied ? "Copied" : "Copy email"} withArrow>
-                                        <ActionIcon
-                                            variant="subtle"
-                                            color={copied ? "teal" : "gray"}
-                                            size="xs"
-                                            onClick={copy}
-                                        >
-                                            {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                                        </ActionIcon>
+            <div className={styles.layout}>
+                <div className={styles["col-sidebar"]}>
+                    <Card withBorder radius="md" className={styles.card}>
+                        <div className={styles["card-header"]}>
+                            <div
+                                className={styles.avatar}
+                                style={{ backgroundColor: clientAvatarColor }}
+                            >
+                                <Text className={styles["avatar-text"]}>{clientInitials}</Text>
+                            </div>
+                            <div className={styles["header-info"]}>
+                                <Title order={2}>{client.first_name} {client.last_name}</Title>
+                                <Group gap="xs" className={styles["email-row"]}>
+                                    <IconMail size={14} color="var(--mantine-color-dimmed)" />
+                                    <Text size="sm" c="dimmed">{client.email}</Text>
+                                    <CopyButton value={client.email} timeout={2000}>
+                                        {({ copied, copy }) => (
+                                            <Tooltip label={copied ? "Copied" : "Copy email"} withArrow>
+                                                <ActionIcon
+                                                    variant="subtle"
+                                                    color={copied ? "teal" : "gray"}
+                                                    size="xs"
+                                                    onClick={copy}
+                                                >
+                                                    {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                                                </ActionIcon>
+                                            </Tooltip>
+                                        )}
+                                    </CopyButton>
+                                </Group>
+                            </div>
+                        </div>
+
+                        <div className={styles.divider} />
+
+                        <Stack gap="xs" className={styles["info-rows"]}>
+                            <Group gap="sm" className={styles["info-row"]}>
+                                <IconCalendar size={16} color="var(--mantine-color-dimmed)" />
+                                <Text size="sm" c="dimmed" className={styles["info-label"]}>Member since</Text>
+                                <Text size="sm" fw={500}>{formatDate(client.created_at)}</Text>
+                            </Group>
+                            <Group gap="sm" className={styles["info-row"]}>
+                                <IconClock size={16} color="var(--mantine-color-dimmed)" />
+                                <Text size="sm" c="dimmed" className={styles["info-label"]}>Last contacted</Text>
+                                {client.last_contacted_at ? (
+                                    <Tooltip label={formatAbsoluteTimestamp(client.last_contacted_at)} withArrow>
+                                        <Text size="sm" fw={500} className={getLastContactedClass(client.last_contacted_at)}>
+                                            {formatTimestamp(client.last_contacted_at)}
+                                        </Text>
                                     </Tooltip>
+                                ) : (
+                                    <Text size="sm" c="dimmed">Never</Text>
                                 )}
-                            </CopyButton>
+                            </Group>
+                            <Group gap="sm" className={styles["info-row"]}>
+                                <IconPointFilled size={16} color="var(--mantine-color-green-6)" />
+                                <Text size="sm" c="dimmed" className={styles["info-label"]}>Status</Text>
+                                <Badge variant="light" color="green" size="sm">Active</Badge>
+                            </Group>
+                        </Stack>
+                    </Card>
+                </div>
+
+                <div className={styles["col-main"]}>
+                    <Group gap="xs" className={styles["activity-header"]}>
+                        <IconTimeline size={20} />
+                        <Title order={3}>Activity</Title>
+                        <Badge variant="light" color="gray" size="sm" circle>
+                            {notes.length}
+                        </Badge>
+                    </Group>
+
+                    <Group gap="xs" className={styles["filter-chips"]}>
+                        {FILTER_OPTIONS.map(option => (
+                            <Button
+                                key={option.value}
+                                size="compact-xs"
+                                variant={activeFilter === option.value ? "filled" : "light"}
+                                color={activeFilter === option.value ? "violet" : "gray"}
+                                onClick={() => setActiveFilter(option.value)}
+                                radius="xl"
+                            >
+                                {option.label}
+                            </Button>
+                        ))}
+                    </Group>
+
+                    <div className={styles.composer}>
+                        <Group gap="xs" className={styles["composer-categories"]}>
+                            {CATEGORY_ORDER.map(cat => {
+                                const config = CATEGORY_CONFIG[cat];
+                                const isActive = noteCategory === cat;
+                                return (
+                                    <Button
+                                        key={cat}
+                                        size="compact-xs"
+                                        variant={isActive ? "light" : "subtle"}
+                                        color={isActive ? config.color : "gray"}
+                                        leftSection={config.icon}
+                                        onClick={() => setNoteCategory(cat)}
+                                        className={
+                                            styles["composer-category-btn"] +
+                                            (isActive ? " " + styles["composer-category-active"] : "")
+                                        }
+                                    >
+                                        {config.label}
+                                    </Button>
+                                );
+                            })}
+                        </Group>
+                        <Textarea
+                            placeholder="Log a note, call summary, or follow-up..."
+                            value={noteContent}
+                            onChange={e => setNoteContent(e.currentTarget.value)}
+                            onKeyDown={handleComposerKeyDown}
+                            minRows={3}
+                            autosize
+                            className={styles["composer-textarea"]}
+                        />
+                        <Group justify="space-between" align="center" mt="sm">
+                            <Text size="xs" c="dimmed">⌘Enter to save</Text>
+                            <Button
+                                onClick={handleAddNote}
+                                loading={submitting}
+                                disabled={!noteContent.trim()}
+                                leftSection={<IconSend size={14} />}
+                                size="sm"
+                            >
+                                Save
+                            </Button>
                         </Group>
                     </div>
-                </div>
 
-                <div className={styles.divider} />
-
-                <Stack gap="md" className={styles["info-rows"]}>
-                    <Group gap="sm">
-                        <IconCalendar size={16} color="var(--mantine-color-dimmed)" />
-                        <Text size="sm" c="dimmed" className={styles["info-label"]}>Member since</Text>
-                        <Text size="sm" fw={500}>{formatDate(client.created_at)}</Text>
-                    </Group>
-                    <Group gap="sm">
-                        <IconClock size={16} color="var(--mantine-color-dimmed)" />
-                        <Text size="sm" c="dimmed" className={styles["info-label"]}>Last contacted</Text>
-                        {client.last_contacted_at ? (
-                            <Tooltip label={formatAbsoluteTimestamp(client.last_contacted_at)} withArrow>
-                                <Text size="sm" fw={500} className={getLastContactedClass(client.last_contacted_at)}>
-                                    {formatTimestamp(client.last_contacted_at)}
-                                </Text>
-                            </Tooltip>
-                        ) : (
-                            <Text size="sm" c="dimmed">Never</Text>
-                        )}
-                    </Group>
-                    <Group gap="sm">
-                        <IconPointFilled size={16} color="var(--mantine-color-green-6)" />
-                        <Text size="sm" c="dimmed" className={styles["info-label"]}>Status</Text>
-                        <Badge variant="light" color="green" size="sm">Active</Badge>
-                    </Group>
-                </Stack>
-            </Card>
-
-            <Group gap="xs" className={styles["activity-header"]}>
-                <IconTimeline size={20} />
-                <Title order={3}>Activity</Title>
-                <Badge variant="light" color="gray" size="sm" circle>
-                    {notes.length}
-                </Badge>
-            </Group>
-
-            <Group gap="xs" className={styles["filter-chips"]}>
-                {FILTER_OPTIONS.map(option => (
-                    <Button
-                        key={option.value}
-                        size="compact-xs"
-                        variant={activeFilter === option.value ? "filled" : "light"}
-                        color={activeFilter === option.value ? "violet" : "gray"}
-                        onClick={() => setActiveFilter(option.value)}
-                        radius="xl"
-                    >
-                        {option.label}
-                    </Button>
-                ))}
-            </Group>
-
-            <div className={styles.composer}>
-                <Group gap="xs" className={styles["composer-categories"]}>
-                    {CATEGORY_ORDER.map(cat => {
-                        const config = CATEGORY_CONFIG[cat];
-                        const isActive = noteCategory === cat;
-                        return (
-                            <Button
-                                key={cat}
-                                size="compact-xs"
-                                variant={isActive ? "light" : "subtle"}
-                                color={isActive ? config.color : "gray"}
-                                leftSection={config.icon}
-                                onClick={() => setNoteCategory(cat)}
-                                className={
-                                    styles["composer-category-btn"] +
-                                    (isActive ? " " + styles["composer-category-active"] : "")
-                                }
-                            >
-                                {config.label}
-                            </Button>
-                        );
-                    })}
-                </Group>
-                <Textarea
-                    placeholder="Log a note, call summary, or follow-up..."
-                    value={noteContent}
-                    onChange={e => setNoteContent(e.currentTarget.value)}
-                    minRows={3}
-                    autosize
-                    className={styles["composer-textarea"]}
-                />
-                <Group justify="flex-end" mt="sm">
-                    <Button
-                        onClick={handleAddNote}
-                        loading={submitting}
-                        disabled={!noteContent.trim()}
-                        leftSection={<IconSend size={14} />}
-                        size="sm"
-                    >
-                        Save
-                    </Button>
-                </Group>
-            </div>
-
-            {notesError ? (
-                <Alert
-                    icon={<IconAlertCircle size={16} />}
-                    title="Could not load activity"
-                    color="red"
-                    variant="light"
-                >
-                    {notesError}
-                </Alert>
-            ) : notes.length === 0 ? (
-                <div className={styles["empty-state"]}>
-                    <IconNote size={40} color="var(--mantine-color-gray-4)" />
-                    <Text c="dimmed" size="sm" mt="sm">No activity yet</Text>
-                    <Text c="dimmed" size="xs">Notes and interactions will appear here.</Text>
-                </div>
-            ) : (
-                <Stack gap="sm">
-                    {filteredNotes.length === 0 ? (
-                        <Text c="dimmed" size="sm" ta="center" py="lg">
-                            No {FILTER_OPTIONS.find(o => o.value === activeFilter)?.label.toLowerCase()} entries found.
-                        </Text>
+                    {notesError ? (
+                        <Alert
+                            icon={<IconAlertCircle size={16} />}
+                            title="Could not load activity"
+                            color="red"
+                            variant="light"
+                        >
+                            {notesError}
+                        </Alert>
+                    ) : notes.length === 0 ? (
+                        <div className={styles["empty-state"]}>
+                            <IconNote size={40} color="var(--mantine-color-gray-4)" />
+                            <Text c="dimmed" size="sm" mt="sm">No activity yet</Text>
+                            <Text c="dimmed" size="xs">Notes and interactions will appear here.</Text>
+                        </div>
                     ) : (
-                        filteredNotes.map(note => (
-                            <NoteCard key={note.id} note={note} />
-                        ))
+                        <Stack gap="sm">
+                            {filteredNotes.length === 0 ? (
+                                <Text c="dimmed" size="sm" ta="center" py="lg">
+                                    No {FILTER_OPTIONS.find(o => o.value === activeFilter)?.label.toLowerCase()} entries found.
+                                </Text>
+                            ) : (
+                                filteredNotes.map(note => (
+                                    <NoteCard key={note.id} note={note} />
+                                ))
+                            )}
+                        </Stack>
                     )}
-                </Stack>
-            )}
+                </div>
+            </div>
         </div>
     );
 }

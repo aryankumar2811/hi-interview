@@ -19,6 +19,20 @@
     margin-top: var(--mantine-spacing-xl);
 }
 
+.client-count {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.sort-header {
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+        background-color: var(--mantine-color-gray-1);
+    }
+}
+
 .table-row {
     cursor: pointer;
 }
