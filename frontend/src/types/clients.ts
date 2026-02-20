@@ -7,3 +7,9 @@ export interface Client {
     created_at: string;
     updated_at: string;
 }
+
+export interface CreateClientRequest {
+    email: string;
+    first_name: string;
+    last_name: string;
+}

@@ -1,6 +1,6 @@
 import { AxiosInstance } from "axios";
 
-import { Client } from "@/types/clients";
+import { Client, CreateClientRequest } from "@/types/clients";
 
 export default class ClientsApi {
     private axiosInstance: AxiosInstance;
@@ -16,6 +16,11 @@ export default class ClientsApi {
 
     public getClient = async (clientId: string): Promise<Client> => {
         const response = await this.axiosInstance.get<Client>(`client/${clientId}`);
+        return response.data;
+    };
+
+    public createClient = async (data: CreateClientRequest): Promise<Client> => {
+        const response = await this.axiosInstance.post<Client>("client", data);
         return response.data;
     };
 }
