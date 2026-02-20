@@ -11,6 +11,7 @@ class PClient(BaseModel):
     assigned_user_id: str | None
     created_at: datetime
     updated_at: datetime
+    last_contacted_at: datetime | None
 
 
 class PClientCreate(BaseModel):

@@ -28,7 +28,37 @@ def test_create_note(
     assert data["content"] == "Had a great call today."
     assert data["client_id"] == client_id
     assert "creator_user_id" in data
+    assert data["creator_name"] == "testuser@example.com"
+    assert data["category"] == "note"
     assert "created_at" in data
+
+
+def test_create_note_with_category(
+    test_client: TestClient, database: DatabaseManager
+) -> None:
+    client_id = _create_client(database, "note-category@example.com")
+
+    response = test_client.post(
+        f"/client/{client_id}/note",
+        json={"content": "Had a call with client.", "category": "call"},
+    )
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["content"] == "Had a call with client."
+    assert data["category"] == "call"
+
+
+def test_create_note_invalid_category(
+    test_client: TestClient, database: DatabaseManager
+) -> None:
+    client_id = _create_client(database, "note-bad-cat@example.com")
+
+    response = test_client.post(
+        f"/client/{client_id}/note",
+        json={"content": "Bad category.", "category": "invalid"},
+    )
+    assert response.status_code == 422
 
 
 def test_list_notes(
@@ -42,7 +72,7 @@ def test_list_notes(
     )
     test_client.post(
         f"/client/{client_id}/note",
-        json={"content": "Second note"},
+        json={"content": "Second note", "category": "meeting"},
     )
 
     response = test_client.get(f"/client/{client_id}/note")
@@ -51,9 +81,12 @@ def test_list_notes(
     data = response.json()
     assert len(data["data"]) >= 2
 
-    contents = [n["content"] for n in data["data"]]
-    assert "First note" in contents
-    assert "Second note" in contents
+    by_content = {n["content"]: n for n in data["data"]}
+    assert by_content["First note"]["category"] == "note"
+    assert by_content["Second note"]["category"] == "meeting"
+
+    for note in data["data"]:
+        assert note["creator_name"] == "testuser@example.com"
 
 
 def test_list_notes_empty(

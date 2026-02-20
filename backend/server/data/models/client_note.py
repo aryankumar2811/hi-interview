@@ -28,6 +28,9 @@ class ClientNote(Base):
         String, ForeignKey("user.id"), nullable=False
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(
+        String, nullable=False, server_default="note"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )

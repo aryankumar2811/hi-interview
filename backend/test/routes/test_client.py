@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from server.data.models.client import Client
+from server.data.models.client_note import ClientNote
 from server.shared.databasemanager import DatabaseManager
 
 
@@ -140,3 +141,77 @@ def test_create_client_unauthenticated(
         },
     )
     assert response.status_code == 401
+
+
+def test_get_client_last_contacted_at_with_notes(
+    test_client: TestClient, database: DatabaseManager, user_id: str
+) -> None:
+    with database.create_session() as session:
+        client = Client(
+            email="contacted@example.com", first_name="Grace", last_name="Lee"
+        )
+        session.add(client)
+        session.flush()
+        note1 = ClientNote(
+            client_id=client.id, creator_user_id=user_id, content="First note"
+        )
+        note2 = ClientNote(
+            client_id=client.id, creator_user_id=user_id, content="Second note"
+        )
+        session.add(note1)
+        session.add(note2)
+        session.commit()
+        client_id = client.id
+
+    response = test_client.get(f"/client/{client_id}")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["last_contacted_at"] is not None
+
+
+def test_get_client_last_contacted_at_without_notes(
+    test_client: TestClient, database: DatabaseManager
+) -> None:
+    with database.create_session() as session:
+        client = Client(
+            email="no-contact@example.com", first_name="Hank", last_name="Hill"
+        )
+        session.add(client)
+        session.commit()
+        client_id = client.id
+
+    response = test_client.get(f"/client/{client_id}")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["last_contacted_at"] is None
+
+
+def test_list_clients_last_contacted_at(
+    test_client: TestClient, database: DatabaseManager, user_id: str
+) -> None:
+    with database.create_session() as session:
+        client_with = Client(
+            email="list-contacted@example.com", first_name="Ivy", last_name="Chen"
+        )
+        client_without = Client(
+            email="list-no-contact@example.com", first_name="Jack", last_name="Doe"
+        )
+        session.add(client_with)
+        session.add(client_without)
+        session.flush()
+        session.add(
+            ClientNote(
+                client_id=client_with.id, creator_user_id=user_id, content="A note"
+            )
+        )
+        session.commit()
+
+    response = test_client.get("/client")
+    assert response.status_code == 200
+
+    data = response.json()
+    by_email = {c["email"]: c for c in data["data"]}
+    assert by_email["list-contacted@example.com"]["last_contacted_at"] is not None
+    assert by_email["list-no-contact@example.com"]["last_contacted_at"] is None
